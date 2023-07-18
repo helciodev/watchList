@@ -1,5 +1,5 @@
-import { ReactElement, useState } from "react";
-
+import { ReactElement, SyntheticEvent, useEffect, useState } from "react";
+import NA from "/gr-stocks-q8P8YoR6erg-unsplash.jpg";
 const apiKey = import.meta.env.VITE_API_KEY;
 const tempMovieData = [
   {
@@ -48,13 +48,29 @@ const tempWatchedData = [
   },
 ];
 function App() {
-  const [movies, setMovies] = useState(tempMovieData);
+  const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState(tempWatchedData);
   const [query, setQuery] = useState("");
+  const [isLoading, setIsloading] = useState(false);
 
-  function handleSearchMovie(e) {
-    setQuery(e.target.value);
-  }
+  console.log(movies);
+
+  useEffect(() => {
+    async function fetchMovies() {
+      setIsloading((crr) => !crr);
+      const response = await fetch(
+        `http://www.omdbapi.com/?apikey=${apiKey}&s=${query}`
+      );
+
+      const data = await response.json();
+      const { Search: search } = data;
+      setMovies(search);
+      setIsloading((curre) => !curre);
+    }
+
+    fetchMovies();
+  }, [query]);
+
   return (
     <>
       <Navbar>
@@ -63,9 +79,7 @@ function App() {
         <NumResults />
       </Navbar>
       <main className='main'>
-        <Box>
-          <MoviesList movies={movies} />
-        </Box>
+        <Box>{isLoading ? <Loader /> : <MoviesList movies={movies} />}</Box>
         <Box>
           <WatchedMovies watched={watched} />
         </Box>
@@ -92,8 +106,23 @@ function Logo() {
   );
 }
 
-function Search() {
-  return <input type='text' className='search' placeholder='search movie...' />;
+type SearchProps = {
+  queryValue: string;
+  setQuery: (value: string) => void;
+};
+function Search({ queryValue, setQuery }: SearchProps) {
+  function handleQuery(e: InputEvent) {
+    setQuery(e.target.value);
+  }
+  return (
+    <input
+      type='text'
+      className='search'
+      value={queryValue}
+      onChange={handleQuery}
+      placeholder='search movie...'
+    />
+  );
 }
 
 function NumResults() {
@@ -125,7 +154,7 @@ type MovieListProps = {
 function MoviesList({ movies }: MovieListProps) {
   return (
     <ul className='list list-movies'>
-      {movies.map((movie) => (
+      {movies?.map((movie) => (
         <Movie key={movie.imdbID} movie={movie} />
       ))}
     </ul>
@@ -139,7 +168,7 @@ function Movie({ movie }: MovieProps) {
   const { Poster: poster, Title: title, Year: releaseYear } = movie;
   return (
     <li>
-      <img src={poster} alt={`movie ${title}`} />
+      <img src={poster !== "N/A" ? poster : NA} alt={`movie ${title}`} />
       <h3>{title}</h3>
       <div>
         <p>
@@ -234,4 +263,8 @@ function WatchedMovie({ watchedMovie }: WatchedMovieProps) {
       </div>
     </li>
   );
+}
+
+function Loader() {
+  return <p>loading</p>;
 }
