@@ -1,29 +1,8 @@
 import { ReactElement, SyntheticEvent, useEffect, useState } from "react";
 import NA from "/gr-stocks-q8P8YoR6erg-unsplash.jpg";
+import { Player } from "@lottiefiles/react-lottie-player";
 const apiKey = import.meta.env.VITE_API_KEY;
-const tempMovieData = [
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt0133093",
-    Title: "The Matrix",
-    Year: "1999",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
-  },
-  {
-    imdbID: "tt6751668",
-    Title: "Parasite",
-    Year: "2019",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
-  },
-];
+import loader from "./assets/movieLoadingAnimation.json";
 
 const tempWatchedData = [
   {
@@ -52,8 +31,9 @@ function App() {
   const [watched, setWatched] = useState(tempWatchedData);
   const [query, setQuery] = useState("");
   const [isLoading, setIsloading] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
 
-  console.log(movies);
+  console.log(selectedMovie);
 
   useEffect(() => {
     async function fetchMovies() {
@@ -79,9 +59,25 @@ function App() {
         <NumResults />
       </Navbar>
       <main className='main'>
-        <Box>{isLoading ? <Loader /> : <MoviesList movies={movies} />}</Box>
         <Box>
-          <WatchedMovies watched={watched} />
+          {isLoading ? (
+            <Loader />
+          ) : (
+            <MoviesList setSelectedMovie={setSelectedMovie} movies={movies} />
+          )}
+        </Box>
+        <Box>
+          {selectedMovie ? (
+            <PresentSelectedMovie selectedMovie={selectedMovie} />
+          ) : (
+            <>
+              <Summary />
+              <WatchedMovies watched={watched} />
+            </>
+          )}
+        </Box>
+        <Box>
+          <h1>we are hot</h1>
         </Box>
       </main>
     </>
@@ -149,25 +145,36 @@ function Box({ children }: BoxProps) {
 
 type MovieListProps = {
   movies: { imdbID: string; Year: string; Poster: string; Title: string }[];
+  setSelectedMovie: (id: string) => void;
 };
 
-function MoviesList({ movies }: MovieListProps) {
+function MoviesList({ movies, setSelectedMovie }: MovieListProps) {
   return (
     <ul className='list list-movies'>
       {movies?.map((movie) => (
-        <Movie key={movie.imdbID} movie={movie} />
+        <Movie
+          key={movie.imdbID}
+          movie={movie}
+          setSelectedMovie={setSelectedMovie}
+        />
       ))}
     </ul>
   );
 }
 
 type MovieProps = {
-  movie: { Title: string; Poster: string; Year: string };
+  movie: { Title: string; Poster: string; Year: string; imdbID: string };
+  setSelectedMovie: (id: string) => void;
 };
-function Movie({ movie }: MovieProps) {
-  const { Poster: poster, Title: title, Year: releaseYear } = movie;
+function Movie({ movie, setSelectedMovie }: MovieProps) {
+  const {
+    Poster: poster,
+    Title: title,
+    Year: releaseYear,
+    imdbID: imdbId,
+  } = movie;
   return (
-    <li>
+    <li onClick={() => setSelectedMovie(imdbId)}>
       <img src={poster !== "N/A" ? poster : NA} alt={`movie ${title}`} />
       <h3>{title}</h3>
       <div>
@@ -266,5 +273,37 @@ function WatchedMovie({ watchedMovie }: WatchedMovieProps) {
 }
 
 function Loader() {
-  return <p>loading</p>;
+  return (
+    <Player
+      style={{ width: "350px", height: "350px" }}
+      loop
+      autoplay
+      src={loader}
+    />
+  );
+}
+
+type PresentSelectedMovieProps = {
+  selectedMovie: string;
+};
+function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchedSelectedMovie, setFetchedSelectedMovie] = useState({});
+  useEffect(() => {
+    async function fetchSelectedMovie() {
+      setIsLoading(true);
+      const response = await fetch(
+        `http://www.omdbapi.com/?apikey=${apiKey}&i=${selectedMovie}`
+      );
+
+      const data = await response.json();
+      console.log(data);
+      setFetchedSelectedMovie(data);
+      setIsLoading(false);
+    }
+
+    fetchSelectedMovie();
+  }, [selectedMovie]);
+
+  return <div>{selectedMovie}</div>;
 }
