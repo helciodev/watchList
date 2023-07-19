@@ -3,6 +3,7 @@ import NA from "/gr-stocks-q8P8YoR6erg-unsplash.jpg";
 import { Player } from "@lottiefiles/react-lottie-player";
 const apiKey = import.meta.env.VITE_API_KEY;
 import loader from "./assets/movieLoadingAnimation.json";
+import Rating from "./Rating";
 
 const tempWatchedData = [
   {
@@ -28,7 +29,8 @@ const tempWatchedData = [
 ];
 function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [watched, setWatched] = useState([]);
+  const [toWatch, setToWatch] = useState([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsloading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -68,16 +70,24 @@ function App() {
         </Box>
         <Box>
           {selectedMovie ? (
-            <PresentSelectedMovie selectedMovie={selectedMovie} />
+            <PresentSelectedMovie
+              setWatched={setWatched}
+              selectedMovie={selectedMovie}
+              setSelectedMovie={setSelectedMovie}
+              setToWatch={setToWatch}
+            />
           ) : (
             <>
-              <Summary />
+              <Summary heading='Movies you watched' />
               <WatchedMovies watched={watched} />
             </>
           )}
         </Box>
         <Box>
-          <h1>we are hot</h1>
+          <>
+            <Summary heading='Movies on your to watch list' />
+            <MoviesToWatch toWatch={toWatch} />
+          </>
         </Box>
       </main>
     </>
@@ -187,10 +197,10 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
   );
 }
 
-function Summary() {
+function Summary({ heading }) {
   return (
     <div className='summary'>
-      <h2>movies you watched</h2>
+      <h2>{heading}</h2>
       <div>
         <p>
           <span>#️⃣</span>
@@ -242,13 +252,9 @@ type WatchedMovieProps = {
   };
 };
 function WatchedMovie({ watchedMovie }: WatchedMovieProps) {
-  const {
-    Poster: poster,
-    Title: title,
-    imdbRating,
-    userRating,
-    runtime,
-  } = watchedMovie;
+  console.log(watchedMovie);
+
+  const { poster, title, imdbRating, userRating, runtime } = watchedMovie;
   return (
     <li>
       <img src={poster} alt={`${title} poster`} />
@@ -286,9 +292,16 @@ function Loader() {
 type PresentSelectedMovieProps = {
   selectedMovie: string;
 };
-function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
+function PresentSelectedMovie({
+  selectedMovie,
+  setWatched,
+  setSelectedMovie,
+  setToWatch,
+}: PresentSelectedMovieProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [fetchedSelectedMovie, setFetchedSelectedMovie] = useState({});
+  const [userRating, setUserRating] = useState(0);
+  const [watchedMovie, setWatchedMovie] = useState(false);
 
   const {
     Poster: poster,
@@ -301,6 +314,32 @@ function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
     Genre: genre,
     Director: director,
   } = fetchedSelectedMovie;
+
+  function handleAddWatched() {
+    const newWatchedMovie = {
+      title,
+      runtime,
+      userRating,
+      imdbRating,
+      poster,
+    };
+
+    setWatched((currentWatched) => [...currentWatched, newWatchedMovie]);
+    setSelectedMovie(null);
+  }
+
+  function handleToWatch() {
+    const newMovieToWatch = {
+      title,
+      runtime,
+      userRating,
+      imdbRating,
+      poster,
+    };
+
+    setToWatch((current) => [...current, newMovieToWatch]);
+  }
+
   useEffect(() => {
     async function fetchSelectedMovie() {
       setIsLoading(true);
@@ -309,7 +348,7 @@ function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
       );
 
       const data = await response.json();
-      console.log(data);
+
       setFetchedSelectedMovie(data);
       setIsLoading(false);
     }
@@ -337,6 +376,29 @@ function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
         </div>
       </header>
       <section>
+        <div>
+          <button onClick={() => setWatchedMovie(true)}>watched</button>
+          <button onClick={handleToWatch}>to watch</button>
+        </div>
+        {watchedMovie && (
+          <div className='rating'>
+            <Rating
+              maxRating={10}
+              onRating={setUserRating}
+              color='#FCC419'
+              textColor='#b68c0e'
+              size={16}
+            />
+            {userRating ? (
+              <button onClick={handleAddWatched} className='btn-add'>
+                Add watched movie
+              </button>
+            ) : (
+              ""
+            )}
+          </div>
+        )}
+
         <p>
           {" "}
           <em>{plot}</em>
@@ -345,5 +407,15 @@ function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
         {director !== "N/A" ? <p>Directed by: {director}</p> : ""}
       </section>
     </div>
+  );
+}
+
+function MoviesToWatch({ toWatch }) {
+  return (
+    <ul>
+      {toWatch?.map((movie) => (
+        <WatchedMovie watchedMovie={movie} />
+      ))}
+    </ul>
   );
 }
