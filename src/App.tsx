@@ -289,6 +289,18 @@ type PresentSelectedMovieProps = {
 function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [fetchedSelectedMovie, setFetchedSelectedMovie] = useState({});
+
+  const {
+    Poster: poster,
+    Actors: actors,
+    Plot: plot,
+    imdbRating,
+    Released: released,
+    Runtime: runtime,
+    Title: title,
+    Genre: genre,
+    Director: director,
+  } = fetchedSelectedMovie;
   useEffect(() => {
     async function fetchSelectedMovie() {
       setIsLoading(true);
@@ -305,5 +317,33 @@ function PresentSelectedMovie({ selectedMovie }: PresentSelectedMovieProps) {
     fetchSelectedMovie();
   }, [selectedMovie]);
 
-  return <div>{selectedMovie}</div>;
+  return isLoading ? (
+    <Loader />
+  ) : (
+    <div className='details'>
+      <header>
+        <button className='btn-back'>&larr;</button>
+        <img src={poster} alt={`${title} poster`} />
+        <div className='details-overview'>
+          <h2>{title}</h2>
+          <p>
+            <span>{released}</span>
+            <span>{runtime}</span>
+          </p>
+          <p>{genre}</p>
+          <p>
+            <span>⭐️</span> <span>{imdbRating} IMDB rating</span>
+          </p>
+        </div>
+      </header>
+      <section>
+        <p>
+          {" "}
+          <em>{plot}</em>
+        </p>
+        <p>Starring: {actors}</p>
+        {director !== "N/A" ? <p>Directed by: {director}</p> : ""}
+      </section>
+    </div>
+  );
 }
