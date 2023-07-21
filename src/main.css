@@ -339,6 +339,34 @@ body {
   justify-content: center;
 }
 
+/* *****toWatch */
+
+.watch-watched {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-plot,
+.btn-watched,
+.btn-to-watch {
+  outline: none;
+  border-radius: 2px;
+  padding: 5px 8px;
+  text-transform: uppercase;
+  background-color: var(--color-primary);
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+  color: var(--color-text);
+  border: none;
+}
+
+.btn-plot:hover,
+.btn-watched:hover,
+.btn-to-watch:hover {
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+}
+
 /*
 SPACING SYSTEM (px)
 2 / 4 / 8 / 12 / 16 / 24 / 32 / 40 / 48 / 64 / 80 / 96 / 128
