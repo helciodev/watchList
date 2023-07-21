@@ -1,42 +1,23 @@
-import { ReactElement, SyntheticEvent, useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import NA from "/gr-stocks-q8P8YoR6erg-unsplash.jpg";
 import { Player } from "@lottiefiles/react-lottie-player";
 const apiKey = import.meta.env.VITE_API_KEY;
 import loader from "./assets/movieLoadingAnimation.json";
 import Rating from "./Rating";
+import useLocalStorageState from "./useLocalStorageState";
 
-const tempWatchedData = [
-  {
-    imdbID: "tt1375666",
-    Title: "Inception",
-    Year: "2010",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
-    runtime: 148,
-    imdbRating: 8.8,
-    userRating: 10,
-  },
-  {
-    imdbID: "tt0088763",
-    Title: "Back to the Future",
-    Year: "1985",
-    Poster:
-      "https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg",
-    runtime: 116,
-    imdbRating: 8.5,
-    userRating: 9,
-  },
-];
+function averageCalc(arr): number {
+  return arr?.reduce((acc, item) => (acc + item) / arr?.length);
+}
+
 function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState(
-    () => JSON.parse(localStorage.getItem("watched")) || []
-  );
-  const [toWatch, setToWatch] = useState([]);
+
+  const [toWatch, setToWatch] = useLocalStorageState([], "toWatch");
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
-
+  const [watched, setWatched] = useLocalStorageState([], "watched");
   const numMoviesResults = movies?.length;
 
   function handleCloseSelected() {
@@ -54,10 +35,6 @@ function App() {
   function handleDeleteWatchedMovie(id: string) {
     setWatched((current) => current.filter((movie) => movie.imdbId !== id));
   }
-
-  useEffect(() => {
-    localStorage.setItem("watched", JSON.stringify(watched));
-  }, [watched]);
 
   useEffect(() => {
     async function fetchMovies() {
@@ -103,7 +80,7 @@ function App() {
             />
           ) : (
             <>
-              <Summary heading='Movies you watched' />
+              <Summary heading='Movies you watched' watchedList={watched} />
               <WatchedMovies
                 watched={watched}
                 onDeleteWatchedMovie={handleDeleteWatchedMovie}
@@ -113,7 +90,10 @@ function App() {
         </Box>
         <Box>
           <>
-            <Summary heading='Movies on your to watch list' />
+            <Summary
+              heading='Movies on your to watch list'
+              toWatchList={toWatch}
+            />
             <MoviesToWatch
               toWatch={toWatch}
               onDeleteMovieToWatch={handleDeleteMovieToWatch}
@@ -234,23 +214,54 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
   );
 }
 
-function Summary({ heading }) {
+function Summary({ heading, watchedList, toWatchList }) {
+  const averageUserRating = averageCalc(
+    watchedList?.map((el) => Number(el.userRating))
+  );
+  const averageImdbRating = averageCalc(
+    toWatchList?.map((movie) => Number(movie.imdbRating))
+  );
+
+  const averageToWatchMin = averageCalc(
+    toWatchList?.map((movie) => Number(movie.runtime.split(" ")[0]))
+  );
+  const averageUserWatchedMin = averageCalc(
+    watchedList?.map((movie) => Number(movie.runtime.split(" ")[0]))
+  );
+
   return (
     <div className='summary'>
       <h2>{heading}</h2>
       <div>
         <p>
           <span>#️⃣</span>
-          <span>{tempWatchedData.length}</span>
+          <span>{watchedList?.length}</span>
         </p>
-        <p>
-          <span> ⭐️</span>
-          <span>7.45</span>
-        </p>
-        <p>
-          <span> ⏳</span>
-          <span>149.5 min</span>
-        </p>
+
+        {averageImdbRating && (
+          <p>
+            <span>⭐️</span>
+            <span>{averageImdbRating.toFixed(2)}</span>
+          </p>
+        )}
+        {averageUserRating && (
+          <p>
+            <span> 🌟 </span>
+            <span>{averageUserRating.toFixed(2)}</span>
+          </p>
+        )}
+        {averageToWatchMin && (
+          <p>
+            <span> ⏳</span>
+            <span>{averageToWatchMin.toFixed(2)} min</span>
+          </p>
+        )}
+        {averageUserWatchedMin && (
+          <p>
+            <span> ⏳</span>
+            <span>{averageUserWatchedMin.toFixed(2)} min</span>
+          </p>
+        )}
       </div>
     </div>
   );
@@ -299,7 +310,6 @@ function WatchedMovie({
 }: WatchedMovieProps) {
   const { poster, title, imdbRating, userRating, runtime, imdbId } =
     watchedMovie;
-  console.log(imdbId);
 
   return (
     <li>
