@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useRef, useState } from "react";
 import NA from "/gr-stocks-q8P8YoR6erg-unsplash.jpg";
 import { Player } from "@lottiefiles/react-lottie-player";
 const apiKey = import.meta.env.VITE_API_KEY;
@@ -52,7 +52,11 @@ function App() {
     <>
       <Navbar>
         <Logo />
-        <Search queryValue={query} setQuery={setQuery} />
+        <Search
+          queryValue={query}
+          setQuery={setQuery}
+          onCloseSelected={handleCloseSelected}
+        />
         <NumResults numMoviesResults={numMoviesResults} />
       </Navbar>
       <main className='main'>
@@ -126,10 +130,27 @@ type SearchProps = {
   queryValue: string;
   setQuery: (value: string) => void;
 };
-function Search({ queryValue, setQuery }: SearchProps) {
+function Search({ queryValue, setQuery, onCloseSelected }: SearchProps) {
+  const inputRef = useRef(null);
   function handleQuery(e: InputEvent) {
     setQuery(e.target.value);
   }
+
+  useEffect(() => {
+    const enterKeyEvent = (e: React.KeyboardEvent) => {
+      if (e.code === "Enter") {
+        inputRef.current.focus();
+        setQuery("");
+        onCloseSelected();
+      }
+    };
+    document.addEventListener("keydown", enterKeyEvent);
+    console.log("inside event");
+
+    return function () {
+      document.removeEventListener("keydown", enterKeyEvent);
+    };
+  }, [onCloseSelected]);
   return (
     <input
       type='text'
@@ -137,6 +158,7 @@ function Search({ queryValue, setQuery }: SearchProps) {
       value={queryValue}
       onChange={handleQuery}
       placeholder='search movie...'
+      ref={inputRef}
     />
   );
 }
