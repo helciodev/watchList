@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useRef, useState } from "react";
 import NA from "/gr-stocks-q8P8YoR6erg-unsplash.jpg";
 import { Player } from "@lottiefiles/react-lottie-player";
 const apiKey = import.meta.env.VITE_API_KEY;
@@ -6,8 +6,8 @@ import loader from "./assets/movieLoadingAnimation.json";
 import Rating from "./Rating";
 import useLocalStorageState from "./useLocalStorageState";
 
-function averageCalc(arr): number {
-  return arr?.reduce((acc, item) => (acc + item) / arr?.length);
+function averageCalc(arr) {
+  return arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 }
 
 function App() {
@@ -25,11 +25,7 @@ function App() {
   }
 
   function handleDeleteMovieToWatch(id: string) {
-    setToWatch((curr) =>
-      curr.filter(
-        (movie: { title: string; imdbId: string }) => movie.imdbId !== id
-      )
-    );
+    setToWatch((curr) => curr.filter((movie) => movie.imdbId !== id));
   }
 
   function handleDeleteWatchedMovie(id: string) {
@@ -56,7 +52,11 @@ function App() {
     <>
       <Navbar>
         <Logo />
-        <Search queryValue={query} setQuery={setQuery} />
+        <Search
+          queryValue={query}
+          setQuery={setQuery}
+          onCloseSelected={handleCloseSelected}
+        />
         <NumResults numMoviesResults={numMoviesResults} />
       </Navbar>
       <main className='main'>
@@ -80,7 +80,10 @@ function App() {
             />
           ) : (
             <>
-              <Summary heading='Movies you watched' watchedList={watched} />
+              <SummaryWatched
+                heading='Movies you watched'
+                watchedList={watched}
+              />
               <WatchedMovies
                 watched={watched}
                 onDeleteWatchedMovie={handleDeleteWatchedMovie}
@@ -90,7 +93,7 @@ function App() {
         </Box>
         <Box>
           <>
-            <Summary
+            <SummaryToWatch
               heading='Movies on your to watch list'
               toWatchList={toWatch}
             />
@@ -127,10 +130,27 @@ type SearchProps = {
   queryValue: string;
   setQuery: (value: string) => void;
 };
-function Search({ queryValue, setQuery }: SearchProps) {
+function Search({ queryValue, setQuery, onCloseSelected }: SearchProps) {
+  const inputRef = useRef(null);
   function handleQuery(e: InputEvent) {
     setQuery(e.target.value);
   }
+
+  useEffect(() => {
+    const enterKeyEvent = (e: React.KeyboardEvent) => {
+      if (e.code === "Enter") {
+        inputRef.current.focus();
+        setQuery("");
+        onCloseSelected();
+      }
+    };
+    document.addEventListener("keydown", enterKeyEvent);
+    console.log("inside event");
+
+    return function () {
+      document.removeEventListener("keydown", enterKeyEvent);
+    };
+  }, [onCloseSelected]);
   return (
     <input
       type='text'
@@ -138,6 +158,7 @@ function Search({ queryValue, setQuery }: SearchProps) {
       value={queryValue}
       onChange={handleQuery}
       placeholder='search movie...'
+      ref={inputRef}
     />
   );
 }
@@ -201,7 +222,13 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
     imdbID: imdbId,
   } = movie;
   return (
-    <li onClick={() => setSelectedMovie(imdbId)}>
+    <li
+      onClick={() =>
+        setSelectedMovie((currentSelected) =>
+          currentSelected === imdbId ? null : imdbId
+        )
+      }
+    >
       <img src={poster !== "N/A" ? poster : NA} alt={`movie ${title}`} />
       <h3>{title}</h3>
       <div>
@@ -214,17 +241,31 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
   );
 }
 
-function Summary({ heading, watchedList, toWatchList }) {
+type SummaryProps = {
+  heading: string;
+  watchedList: {
+    title: string;
+    runtime: string;
+    userRating: number;
+    imdbRating: string;
+    poster: string;
+    imdbId: string;
+  }[];
+  toWatchList?: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
+  }[];
+};
+
+function SummaryWatched({ heading, watchedList }: SummaryProps) {
   const averageUserRating = averageCalc(
     watchedList?.map((el) => Number(el.userRating))
   );
-  const averageImdbRating = averageCalc(
-    toWatchList?.map((movie) => Number(movie.imdbRating))
-  );
 
-  const averageToWatchMin = averageCalc(
-    toWatchList?.map((movie) => Number(movie.runtime.split(" ")[0]))
-  );
   const averageUserWatchedMin = averageCalc(
     watchedList?.map((movie) => Number(movie.runtime.split(" ")[0]))
   );
@@ -238,46 +279,63 @@ function Summary({ heading, watchedList, toWatchList }) {
           <span>{watchedList?.length}</span>
         </p>
 
-        {averageImdbRating && (
-          <p>
-            <span>⭐️</span>
-            <span>{averageImdbRating.toFixed(2)}</span>
-          </p>
-        )}
-        {averageUserRating && (
-          <p>
-            <span> 🌟 </span>
-            <span>{averageUserRating.toFixed(2)}</span>
-          </p>
-        )}
-        {averageToWatchMin && (
-          <p>
-            <span> ⏳</span>
-            <span>{averageToWatchMin.toFixed(2)} min</span>
-          </p>
-        )}
-        {averageUserWatchedMin && (
-          <p>
-            <span> ⏳</span>
-            <span>{averageUserWatchedMin.toFixed(2)} min</span>
-          </p>
-        )}
+        <p>
+          <span> 🌟 </span>
+          <span>{averageUserRating.toFixed(2)}</span>
+        </p>
+
+        <p>
+          <span> ⏳</span>
+          <span>{averageUserWatchedMin.toFixed(2)} min</span>
+        </p>
       </div>
     </div>
   );
 }
 
+function SummaryToWatch({ heading, toWatchList }: SummaryProps) {
+  const averageImdbRating = averageCalc(
+    toWatchList?.map((movie) => Number(movie.imdbRating))
+  );
+
+  const averageToWatchMin = averageCalc(
+    toWatchList?.map((movie) => Number(movie.runtime.split(" ")[0]))
+  );
+
+  return (
+    <div className='summary'>
+      <h2>{heading}</h2>
+      <div>
+        <p>
+          <span>#️⃣</span>
+          <span>{toWatchList?.length}</span>
+        </p>
+
+        <p>
+          <span>⭐️</span>
+          <span>{averageImdbRating.toFixed(2)}</span>
+        </p>
+
+        <p>
+          <span> ⏳</span>
+          <span>{averageToWatchMin.toFixed(2)} min</span>
+        </p>
+      </div>
+    </div>
+  );
+}
 type WatchedMoviesProps = {
   watched: {
-    imdbId: string;
-    Title: string;
-    Year: string;
-    Poster: string;
-    imdbRating: number;
+    title: string;
+    runtime: string;
     userRating: number;
-    runtime: number;
+    imdbRating: string;
+    poster: string;
+    imdbId: string;
   }[];
+  onDeleteWatchedMovie: () => void;
 };
+
 function WatchedMovies({ watched, onDeleteWatchedMovie }: WatchedMoviesProps) {
   return (
     <ul className='list'>
@@ -294,13 +352,12 @@ function WatchedMovies({ watched, onDeleteWatchedMovie }: WatchedMoviesProps) {
 
 type WatchedMovieProps = {
   watchedMovie: {
-    imdbId: string;
     title: string;
-    Year: string;
-    poster: string;
-    imdbRating: number;
+    runtime: string;
     userRating: number;
-    runtime: number;
+    imdbRating: string;
+    poster: string;
+    imdbId: string;
   };
   onDeleteWatchedMovie: (id: string) => void;
 };
@@ -360,6 +417,18 @@ type PresentSelectedMovieProps = {
     imdbRating: number;
     userRating: number;
     runtime: number;
+  }[];
+  setWatched: () => void;
+  setSelectedMovie: () => void;
+  setToWatch: () => void;
+  onCloseSelected: () => void;
+  toWatch: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
   }[];
 };
 function PresentSelectedMovie({
@@ -428,6 +497,19 @@ function PresentSelectedMovie({
     setToWatch((current) => [...current, newMovieToWatch]);
     onCloseSelected();
   }
+
+  useEffect(() => {
+    function keyDownEvent(e: React.KeyboardEvent) {
+      console.log(e);
+
+      if (e.code === "Escape") onCloseSelected();
+    }
+    document.addEventListener("keydown", keyDownEvent);
+
+    return function () {
+      document.removeEventListener("keydown", keyDownEvent);
+    };
+  }, [onCloseSelected]);
 
   useEffect(() => {
     const wasWatched = watched?.find((movie) => movie.imdbId === selectedMovie);
@@ -531,22 +613,50 @@ function PresentSelectedMovie({
   );
 }
 
-function MoviesToWatch({ toWatch, onDeleteMovieToWatch }) {
+type MoviesToWatchProps = {
+  toWatch: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
+  }[];
+  onDeleteMovieToWatch: (id: string) => void;
+};
+
+function MoviesToWatch({ toWatch, onDeleteMovieToWatch }: MoviesToWatchProps) {
   return (
     <ul className='list'>
       {toWatch?.map((movie) => (
         <MovieToWatch
-          watchedMovie={movie}
+          movieToWatch={movie}
           onDeleteMovieToWatch={onDeleteMovieToWatch}
+          key={movie.imdbId}
         />
       ))}
     </ul>
   );
 }
 
-function MovieToWatch({ watchedMovie, onDeleteMovieToWatch }) {
+type MovieToWatchProps = {
+  movieToWatch: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
+  };
+  onDeleteMovieToWatch: (id: string) => void;
+};
+
+function MovieToWatch({
+  movieToWatch,
+  onDeleteMovieToWatch,
+}: MovieToWatchProps) {
   const [showMore, setShowMore] = useState(false);
-  const { poster, title, imdbRating, runtime, plot, imdbId } = watchedMovie;
+  const { poster, title, imdbRating, runtime, plot, imdbId } = movieToWatch;
   return (
     <li>
       <img src={poster} alt={`${title} poster`} />
