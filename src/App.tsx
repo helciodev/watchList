@@ -6,8 +6,8 @@ import loader from "./assets/movieLoadingAnimation.json";
 import Rating from "./Rating";
 import useLocalStorageState from "./useLocalStorageState";
 
-function averageCalc(arr: number[]): number {
-  return arr?.reduce((acc, item) => (acc + item) / arr?.length);
+function averageCalc(arr) {
+  return arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 }
 
 function App() {
@@ -76,7 +76,10 @@ function App() {
             />
           ) : (
             <>
-              <Summary heading='Movies you watched' watchedList={watched} />
+              <SummaryWatched
+                heading='Movies you watched'
+                watchedList={watched}
+              />
               <WatchedMovies
                 watched={watched}
                 onDeleteWatchedMovie={handleDeleteWatchedMovie}
@@ -86,7 +89,7 @@ function App() {
         </Box>
         <Box>
           <>
-            <Summary
+            <SummaryToWatch
               heading='Movies on your to watch list'
               toWatchList={toWatch}
             />
@@ -220,7 +223,7 @@ type SummaryProps = {
     poster: string;
     imdbId: string;
   }[];
-  toWatchList: {
+  toWatchList?: {
     title: string;
     runtime: string;
     imdbRating: string;
@@ -230,17 +233,11 @@ type SummaryProps = {
   }[];
 };
 
-function Summary({ heading, watchedList, toWatchList }: SummaryProps) {
+function SummaryWatched({ heading, watchedList }: SummaryProps) {
   const averageUserRating = averageCalc(
     watchedList?.map((el) => Number(el.userRating))
   );
-  const averageImdbRating = averageCalc(
-    toWatchList?.map((movie) => Number(movie.imdbRating))
-  );
 
-  const averageToWatchMin = averageCalc(
-    toWatchList?.map((movie) => Number(movie.runtime.split(" ")[0]))
-  );
   const averageUserWatchedMin = averageCalc(
     watchedList?.map((movie) => Number(movie.runtime.split(" ")[0]))
   );
@@ -254,35 +251,51 @@ function Summary({ heading, watchedList, toWatchList }: SummaryProps) {
           <span>{watchedList?.length}</span>
         </p>
 
-        {averageImdbRating && (
-          <p>
-            <span>⭐️</span>
-            <span>{averageImdbRating.toFixed(2)}</span>
-          </p>
-        )}
-        {averageUserRating && (
-          <p>
-            <span> 🌟 </span>
-            <span>{averageUserRating.toFixed(2)}</span>
-          </p>
-        )}
-        {averageToWatchMin && (
-          <p>
-            <span> ⏳</span>
-            <span>{averageToWatchMin.toFixed(2)} min</span>
-          </p>
-        )}
-        {averageUserWatchedMin && (
-          <p>
-            <span> ⏳</span>
-            <span>{averageUserWatchedMin.toFixed(2)} min</span>
-          </p>
-        )}
+        <p>
+          <span> 🌟 </span>
+          <span>{averageUserRating.toFixed(2)}</span>
+        </p>
+
+        <p>
+          <span> ⏳</span>
+          <span>{averageUserWatchedMin.toFixed(2)} min</span>
+        </p>
       </div>
     </div>
   );
 }
 
+function SummaryToWatch({ heading, toWatchList }: SummaryProps) {
+  const averageImdbRating = averageCalc(
+    toWatchList?.map((movie) => Number(movie.imdbRating))
+  );
+
+  const averageToWatchMin = averageCalc(
+    toWatchList?.map((movie) => Number(movie.runtime.split(" ")[0]))
+  );
+
+  return (
+    <div className='summary'>
+      <h2>{heading}</h2>
+      <div>
+        <p>
+          <span>#️⃣</span>
+          <span>{toWatchList?.length}</span>
+        </p>
+
+        <p>
+          <span>⭐️</span>
+          <span>{averageImdbRating.toFixed(2)}</span>
+        </p>
+
+        <p>
+          <span> ⏳</span>
+          <span>{averageToWatchMin.toFixed(2)} min</span>
+        </p>
+      </div>
+    </div>
+  );
+}
 type WatchedMoviesProps = {
   watched: {
     title: string;
