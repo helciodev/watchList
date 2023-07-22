@@ -200,7 +200,13 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
     imdbID: imdbId,
   } = movie;
   return (
-    <li onClick={() => setSelectedMovie(imdbId)}>
+    <li
+      onClick={() =>
+        setSelectedMovie((currentSelected) =>
+          currentSelected === imdbId ? null : imdbId
+        )
+      }
+    >
       <img src={poster !== "N/A" ? poster : NA} alt={`movie ${title}`} />
       <h3>{title}</h3>
       <div>
@@ -309,8 +315,6 @@ type WatchedMoviesProps = {
 };
 
 function WatchedMovies({ watched, onDeleteWatchedMovie }: WatchedMoviesProps) {
-  console.log(watched);
-
   return (
     <ul className='list'>
       {watched?.map((movie) => (
@@ -473,6 +477,19 @@ function PresentSelectedMovie({
   }
 
   useEffect(() => {
+    function keyDownEvent(e: React.KeyboardEvent) {
+      console.log(e);
+
+      if (e.code === "Escape") onCloseSelected();
+    }
+    document.addEventListener("keydown", keyDownEvent);
+
+    return function () {
+      document.removeEventListener("keydown", keyDownEvent);
+    };
+  }, [onCloseSelected]);
+
+  useEffect(() => {
     const wasWatched = watched?.find((movie) => movie.imdbId === selectedMovie);
     setAlreadyRated(wasWatched);
 
@@ -587,8 +604,6 @@ type MoviesToWatchProps = {
 };
 
 function MoviesToWatch({ toWatch, onDeleteMovieToWatch }: MoviesToWatchProps) {
-  console.log(toWatch);
-
   return (
     <ul className='list'>
       {toWatch?.map((movie) => (
