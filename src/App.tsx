@@ -6,7 +6,7 @@ import loader from "./assets/movieLoadingAnimation.json";
 import Rating from "./Rating";
 import useLocalStorageState from "./useLocalStorageState";
 
-function averageCalc(arr): number {
+function averageCalc(arr: number[]): number {
   return arr?.reduce((acc, item) => (acc + item) / arr?.length);
 }
 
@@ -25,11 +25,7 @@ function App() {
   }
 
   function handleDeleteMovieToWatch(id: string) {
-    setToWatch((curr) =>
-      curr.filter(
-        (movie: { title: string; imdbId: string }) => movie.imdbId !== id
-      )
-    );
+    setToWatch((curr) => curr.filter((movie) => movie.imdbId !== id));
   }
 
   function handleDeleteWatchedMovie(id: string) {
@@ -214,7 +210,27 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
   );
 }
 
-function Summary({ heading, watchedList, toWatchList }) {
+type SummaryProps = {
+  heading: string;
+  watchedList: {
+    title: string;
+    runtime: string;
+    userRating: number;
+    imdbRating: string;
+    poster: string;
+    imdbId: string;
+  }[];
+  toWatchList: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
+  }[];
+};
+
+function Summary({ heading, watchedList, toWatchList }: SummaryProps) {
   const averageUserRating = averageCalc(
     watchedList?.map((el) => Number(el.userRating))
   );
@@ -269,16 +285,19 @@ function Summary({ heading, watchedList, toWatchList }) {
 
 type WatchedMoviesProps = {
   watched: {
-    imdbId: string;
-    Title: string;
-    Year: string;
-    Poster: string;
-    imdbRating: number;
+    title: string;
+    runtime: string;
     userRating: number;
-    runtime: number;
+    imdbRating: string;
+    poster: string;
+    imdbId: string;
   }[];
+  onDeleteWatchedMovie: () => void;
 };
+
 function WatchedMovies({ watched, onDeleteWatchedMovie }: WatchedMoviesProps) {
+  console.log(watched);
+
   return (
     <ul className='list'>
       {watched?.map((movie) => (
@@ -294,13 +313,12 @@ function WatchedMovies({ watched, onDeleteWatchedMovie }: WatchedMoviesProps) {
 
 type WatchedMovieProps = {
   watchedMovie: {
-    imdbId: string;
     title: string;
-    Year: string;
-    poster: string;
-    imdbRating: number;
+    runtime: string;
     userRating: number;
-    runtime: number;
+    imdbRating: string;
+    poster: string;
+    imdbId: string;
   };
   onDeleteWatchedMovie: (id: string) => void;
 };
@@ -360,6 +378,18 @@ type PresentSelectedMovieProps = {
     imdbRating: number;
     userRating: number;
     runtime: number;
+  }[];
+  setWatched: () => void;
+  setSelectedMovie: () => void;
+  setToWatch: () => void;
+  onCloseSelected: () => void;
+  toWatch: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
   }[];
 };
 function PresentSelectedMovie({
@@ -531,22 +561,52 @@ function PresentSelectedMovie({
   );
 }
 
-function MoviesToWatch({ toWatch, onDeleteMovieToWatch }) {
+type MoviesToWatchProps = {
+  toWatch: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
+  }[];
+  onDeleteMovieToWatch: (id: string) => void;
+};
+
+function MoviesToWatch({ toWatch, onDeleteMovieToWatch }: MoviesToWatchProps) {
+  console.log(toWatch);
+
   return (
     <ul className='list'>
       {toWatch?.map((movie) => (
         <MovieToWatch
-          watchedMovie={movie}
+          movieToWatch={movie}
           onDeleteMovieToWatch={onDeleteMovieToWatch}
+          key={movie.imdbId}
         />
       ))}
     </ul>
   );
 }
 
-function MovieToWatch({ watchedMovie, onDeleteMovieToWatch }) {
+type MovieToWatchProps = {
+  movieToWatch: {
+    title: string;
+    runtime: string;
+    imdbRating: string;
+    poster: string;
+    plot: string;
+    imdbId: string;
+  };
+  onDeleteMovieToWatch: (id: string) => void;
+};
+
+function MovieToWatch({
+  movieToWatch,
+  onDeleteMovieToWatch,
+}: MovieToWatchProps) {
   const [showMore, setShowMore] = useState(false);
-  const { poster, title, imdbRating, runtime, plot, imdbId } = watchedMovie;
+  const { poster, title, imdbRating, runtime, plot, imdbId } = movieToWatch;
   return (
     <li>
       <img src={poster} alt={`${title} poster`} />
