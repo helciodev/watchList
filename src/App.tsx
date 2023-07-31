@@ -6,10 +6,36 @@ import loader from "./assets/movieLoadingAnimation.json";
 import Rating from "./Rating";
 import useLocalStorageState from "./useLocalStorageState";
 
-function averageCalc(arr) {
-  return arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
+function averageCalc(arr: any[] | undefined): number {
+  return arr.reduce(
+    (acc: number, cur: number, arr: string | any[]) => acc + cur / arr.length,
+    0
+  );
 }
 
+type ToWatchMovie = {
+  imdbId: string;
+  imdbRating: string;
+  plot: string;
+  poster: string;
+  runtime: string;
+  title: string;
+  userRating?: number;
+};
+
+type Movie = {
+  Title: string;
+  Year: string;
+  imdbID: string;
+  Type: string;
+  Poster: string;
+};
+
+interface Data {
+  Search: Movie[];
+  totalResults: string;
+  Response: string;
+}
 function App() {
   const [movies, setMovies] = useState([]);
 
@@ -19,30 +45,41 @@ function App() {
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [watched, setWatched] = useLocalStorageState([], "watched");
   const numMoviesResults = movies?.length;
+  console.log(movies);
 
   function handleCloseSelected() {
     setSelectedMovie(null);
   }
 
   function handleDeleteMovieToWatch(id: string) {
-    setToWatch((curr) => curr.filter((movie) => movie.imdbId !== id));
+    setToWatch((curr: ToWatchMovie[]) =>
+      curr.filter((movie: { imdbId: string }) => movie.imdbId !== id)
+    );
   }
 
   function handleDeleteWatchedMovie(id: string) {
-    setWatched((current) => current.filter((movie) => movie.imdbId !== id));
+    setWatched((current: ToWatchMovie[]) =>
+      current.filter((movie: { imdbId: string }) => movie.imdbId !== id)
+    );
   }
 
   useEffect(() => {
-    async function fetchMovies() {
-      setIsLoading((crr) => !crr);
-      const response = await fetch(
-        `http://www.omdbapi.com/?apikey=${apiKey}&s=${query}`
-      );
+    async function fetchMovies(): Promise<void> {
+      try {
+        setIsLoading((crr) => !crr);
+        const response = await fetch(
+          `http://www.omdbapi.com/?apikey=${apiKey}&s=${query}`
+        );
 
-      const data = await response.json();
-      const { Search: search } = data;
-      setMovies(search);
-      setIsLoading((curre) => !curre);
+        const data = await response.json();
+
+        const { Search: search } = data;
+
+        setMovies(search);
+        setIsLoading((curre) => !curre);
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     fetchMovies();
@@ -224,7 +261,7 @@ function Movie({ movie, setSelectedMovie }: MovieProps) {
   return (
     <li
       onClick={() =>
-        setSelectedMovie((currentSelected) =>
+        setSelectedMovie((currentSelected: string) =>
           currentSelected === imdbId ? null : imdbId
         )
       }
@@ -431,6 +468,32 @@ type PresentSelectedMovieProps = {
     imdbId: string;
   }[];
 };
+
+type FetchedSelectedMovie = {
+  Title: string;
+  Year: string;
+  Rated: string;
+  Released: string;
+  Runtime: string;
+  Genre: string;
+  Director: string;
+  Writer: string;
+  Actors: string;
+  Plot: string;
+  Language: string;
+  Country: string;
+  Awards: string;
+  Poster: string;
+  Ratings: [{ Source: string; Value: string }];
+  Metascore: string;
+  imdbRating: string;
+  imdbVotes: string;
+  imdbID: string;
+  Type: string;
+  Production: string;
+  Website: string;
+  Response: string;
+};
 function PresentSelectedMovie({
   selectedMovie,
   setWatched,
@@ -441,7 +504,8 @@ function PresentSelectedMovie({
   toWatch,
 }: PresentSelectedMovieProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [fetchedSelectedMovie, setFetchedSelectedMovie] = useState({});
+  const [fetchedSelectedMovie, setFetchedSelectedMovie] =
+    useState<FetchedSelectedMovie>({});
   const [userRating, setUserRating] = useState(0);
   const [watchedMovie, setWatchedMovie] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(null);
@@ -459,6 +523,7 @@ function PresentSelectedMovie({
     Director: director,
     imdbID: imdbId,
   } = fetchedSelectedMovie;
+  console.log(fetchedSelectedMovie);
 
   function handleAddWatched() {
     const newWatchedMovie = {
@@ -480,7 +545,7 @@ function PresentSelectedMovie({
       return;
     }
 
-    setWatched((currentWatched) => [...currentWatched, newWatchedMovie]);
+    setWatched((currentWatched: any) => [...currentWatched, newWatchedMovie]);
     setSelectedMovie(null);
   }
 
@@ -494,7 +559,7 @@ function PresentSelectedMovie({
       imdbId,
     };
 
-    setToWatch((current) => [...current, newMovieToWatch]);
+    setToWatch((current: any) => [...current, newMovieToWatch]);
     onCloseSelected();
   }
 
