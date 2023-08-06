@@ -6,11 +6,8 @@ import loader from "./assets/movieLoadingAnimation.json";
 import Rating from "./Rating";
 import useLocalStorageState from "./useLocalStorageState";
 
-function averageCalc(arr: any[] | undefined): number {
-  return arr.reduce(
-    (acc: number, cur: number, arr: string | any[]) => acc + cur / arr.length,
-    0
-  );
+function averageCalc(arr: unknown[]): number {
+  return arr.reduce((acc: number, cur: number) => acc + cur / arr.length, 0);
 }
 
 type ToWatchMovie = {
@@ -444,6 +441,16 @@ function Loader() {
   );
 }
 
+type AlreadyRated = {
+  title: string;
+  runtime: string;
+  userRating: number;
+  imdbRating: string;
+  poster: string;
+  plot: string;
+  imdbId: string;
+};
+
 type PresentSelectedMovieProps = {
   selectedMovie: string;
   watched: {
@@ -455,6 +462,7 @@ type PresentSelectedMovieProps = {
     userRating: number;
     runtime: number;
   }[];
+
   setWatched: () => void;
   setSelectedMovie: () => void;
   setToWatch: () => void;
@@ -494,6 +502,7 @@ type FetchedSelectedMovie = {
   Website: string;
   Response: string;
 };
+
 function PresentSelectedMovie({
   selectedMovie,
   setWatched,
@@ -508,8 +517,10 @@ function PresentSelectedMovie({
     useState<FetchedSelectedMovie>({});
   const [userRating, setUserRating] = useState(0);
   const [watchedMovie, setWatchedMovie] = useState(false);
-  const [alreadyRated, setAlreadyRated] = useState(null);
+  const [alreadyRated, setAlreadyRated] = useState<AlreadyRated | object>({});
   const [movieToWatch, setMovieToWatch] = useState(null);
+
+  console.log(alreadyRated);
 
   const {
     Poster: poster,
@@ -523,6 +534,7 @@ function PresentSelectedMovie({
     Director: director,
     imdbID: imdbId,
   } = fetchedSelectedMovie;
+
   console.log(fetchedSelectedMovie);
 
   function handleAddWatched() {
@@ -582,20 +594,21 @@ function PresentSelectedMovie({
 
     const isToWatch = toWatch.find((movie) => movie.imdbId === selectedMovie);
     setMovieToWatch(isToWatch);
-    async function fetchSelectedMovie() {
+    async function fetchSelectedMovie(): Promise<void> {
       setIsLoading(true);
       const response = await fetch(
         `http://www.omdbapi.com/?apikey=${apiKey}&i=${selectedMovie}`
       );
 
-      const data = await response.json();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const data: FetchedSelectedMovie = await response.json();
 
       setFetchedSelectedMovie(data);
 
       setIsLoading(false);
     }
 
-    fetchSelectedMovie();
+    void fetchSelectedMovie();
   }, [selectedMovie, watched, toWatch]);
 
   return isLoading ? (
